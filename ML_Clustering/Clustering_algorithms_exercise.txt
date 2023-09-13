@@ -1,0 +1,61 @@
+# Import necessary libraries
+import pandas as pd
+import numpy as np
+import nltk
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from gensim.models import Word2Vec
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+
+# Download NLTK resources
+nltk.download('punkt')
+nltk.download('stopwords')
+
+# Load your text data into a DataFrame, where 'text_column' is the column containing the text data
+data = pd.read_csv('your_text_data.csv')
+text_data = data['text_column']
+
+# Preprocessing: Tokenization and TF-IDF Vectorization
+stop_words = set(stopwords.words('english'))
+
+# Define a TF-IDF Vectorizer
+tfidf_vectorizer = TfidfVectorizer(max_df=0.8, max_features=1000, stop_words=stop_words)
+tfidf_matrix = tfidf_vectorizer.fit_transform(text_data)
+
+# Define clustering algorithms
+algorithms = {
+    'K-Means': KMeans(n_clusters=3),
+    'DBSCAN': DBSCAN(eps=0.5, min_samples=5),
+    'Agglomerative': AgglomerativeClustering(n_clusters=3)
+}
+
+# Initialize PCA for visualization
+pca = PCA(n_components=2)
+pca_result = pca.fit_transform(tfidf_matrix.toarray())
+
+# Plotting
+plt.figure(figsize=(15, 5))
+
+for i, (algo_name, algo) in enumerate(algorithms.items(), 1):
+    plt.subplot(1, 3, i)
+    
+    # Fit the clustering algorithm
+    if algo_name == 'DBSCAN':
+        cluster_labels = algo.fit_predict(tfidf_matrix.toarray())
+    else:
+        cluster_labels = algo.fit_predict(tfidf_matrix)
+    
+    # Add cluster labels to the DataFrame
+    data[f'{algo_name}_cluster'] = cluster_labels
+    
+    # Visualize clusters using PCA
+    plt.scatter(pca_result[:, 0], pca_result[:, 1], c=cluster_labels, cmap='rainbow')
+    plt.title(f'{algo_name} Clustering')
+    plt.xlabel('PCA 1')
+    plt.ylabel('PCA 2')
+
+plt.tight_layout()
+plt.show()
