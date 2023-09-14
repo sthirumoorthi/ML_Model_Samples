@@ -1,0 +1,46 @@
+import pandas as pd
+import re
+import contractions
+from nltk.corpus import stopwords
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+
+# Load your JSON or YAML configuration file with categories and keywords
+config = {
+    "category1": ["keyword1", "keyword2", "bill payment", "add new line"],
+    "category2": ["keyword3", "keyword4", "connection"],
+    "category3": ["keyword5", "keyword6", "customer support"]
+}
+
+# Function to preprocess text
+def preprocess_text(text):
+    # Handle contractions
+    text = contractions.fix(text)
+    
+    # Remove stopwords
+    custom_stopwords = set(stopwords.words('english') + list(ENGLISH_STOP_WORDS))
+    text = ' '.join([word for word in text.split() if word.lower() not in custom_stopwords])
+    
+    # Remove punctuation and convert to lowercase
+    text = re.sub(r'[^\w\s]', '', text).lower()
+    
+    return text
+
+# Load the CSV file into a DataFrame
+df = pd.read_csv('your_input.csv')
+
+# Preprocess the "REMARK_TEXT" column
+df['REMARK_TEXT'] = df['REMARK_TEXT'].apply(preprocess_text)
+
+# Function to assign category based on keywords
+def assign_category(text):
+    for category, keywords in config.items():
+        for keyword in keywords:
+            if keyword in text:
+                return category
+    return "Others"
+
+# Add a new column for categories
+df['CATEGORY'] = df['REMARK_TEXT'].apply(assign_category)
+
+# Save the updated DataFrame to a new CSV file
+df.to_csv('output_with_categories.csv', index=False)
